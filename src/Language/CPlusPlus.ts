@@ -315,6 +315,11 @@ class CPlusPlusRenderer extends ConvenienceRenderer {
         return true;
     }
 
+    protected canBeForwardDeclared(t: Type): boolean {
+        const kind = t.kind;
+        return kind === "class";
+    }
+
     private emitBlock = (line: Sourcelike, withSemicolon: boolean, f: () => void): void => {
         this.emitLine(line, " {");
         this.indent(f);

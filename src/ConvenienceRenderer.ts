@@ -87,6 +87,10 @@ export abstract class ConvenienceRenderer extends Renderer {
         return false;
     }
 
+    protected canBeForwardDeclared(_t: Type): boolean {
+        return panic("If needsTypeDeclarationBeforeUse returns true, canBeForwardDeclared must be implemented");
+    }
+
     protected unionNeedsName(u: UnionType): boolean {
         return !nullableFromUnion(u);
     }
@@ -322,9 +326,17 @@ export abstract class ConvenienceRenderer extends Renderer {
         return panic("A renderer that invokes isCycleBreakerType must implement canBeCycleBreakerType");
     }
 
+    protected canBreakCycles(_t: Type): boolean {
+        return true;
+    }
+
     protected isCycleBreakerType(t: Type): boolean {
         if (this._cycleBreakerTypes === undefined) {
-            this._cycleBreakerTypes = cycleBreakerTypesForGraph(this.typeGraph, s => this.isImplicitCycleBreaker(s));
+            this._cycleBreakerTypes = cycleBreakerTypesForGraph(
+                this.typeGraph,
+                s => this.isImplicitCycleBreaker(s),
+                s => this.canBreakCycles(s)
+            );
         }
         return this._cycleBreakerTypes.has(t);
     }
@@ -486,7 +498,7 @@ export abstract class ConvenienceRenderer extends Renderer {
     protected emitSource(): void {
         this._declarationIR = declarationsForGraph(
             this.typeGraph,
-            this.needsTypeDeclarationBeforeUse,
+            this.needsTypeDeclarationBeforeUse ? t => this.canBeForwardDeclared(t) : undefined,
             this.childrenOfType,
             t => {
                 if (t instanceof UnionType) {
